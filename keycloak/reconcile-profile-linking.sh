@@ -9,7 +9,9 @@ profile=/opt/vistay/user-profile.json
 
 ensure_facade() {
   realm="$1"
-  "$kcadm" update "realms/$realm" -s registrationAllowed=true -s verifyEmail=true >/dev/null
+  # Registration is projected from User Service policy. Reconciliation owns
+  # only the invariant shared by every portal and must not overwrite policy.
+  "$kcadm" update "realms/$realm" -s verifyEmail=true >/dev/null
   client_uuid=$("$kcadm" get clients -r "$realm" -q clientId=vistay-auth-facade \
     --fields id --format csv --noquotes | head -n 1)
   if [ -z "$client_uuid" ]; then
