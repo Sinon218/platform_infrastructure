@@ -15,6 +15,7 @@ type Query {
   profileLinkRequests(profileType: AccountType, status: String = "APPROVAL_PENDING", first: Int = 50): [ProfileLinkReview!]! @authenticated
   userDirectory(accountType: AccountType!, search: String, first: Int = 25, after: String): UserDirectoryPage! @authenticated
   userProfile(accountType: AccountType!, profileId: ID!): UserProfileDetails! @authenticated
+  identityPolicies: [IdentityPolicy!]! @authenticated
   authorizationCatalog(accountType: AccountType!): [AuthorizationRole!]! @authenticated
   authorizationSubject(subjectId: ID!): AuthorizationSubject! @authenticated
   authorizationSubjectByAccount(accountType: AccountType!, accountId: ID!): AuthorizationSubject! @authenticated
@@ -44,6 +45,7 @@ type Mutation {
   verifyMyProfileLink(input: VerifyProfileLinkInput!): ProfileAccountLink! @authenticated
   approveProfileLink(input: ApproveProfileLinkInput!): ProfileAccountLink! @authenticated
   rejectProfileLink(input: RejectProfileLinkInput!): ProfileAccountLink! @authenticated
+  updateIdentityPolicy(input: UpdateIdentityPolicyInput!): IdentityPolicy! @authenticated
 }
 
 type ProtectedIdentityDocument {
@@ -175,6 +177,29 @@ type UserProfileDetails {
   version: Int!
   createdAt: String!
   updatedAt: String!
+}
+
+type IdentityPolicy {
+  accountType: AccountType!
+  policyVersion: Int!
+  registrationEnabled: Boolean!
+  linkMode: String!
+  linkDeadlineSeconds: Int!
+  otpTtlSeconds: Int!
+  maxOtpAttempts: Int!
+  disableGracePeriodSeconds: Int!
+  purgeAfterSeconds: Int!
+  active: Boolean!
+  updatedAt: String!
+}
+
+input UpdateIdentityPolicyInput {
+  accountType: AccountType!
+  registrationEnabled: Boolean!
+  linkMode: String!
+  expectedPolicyVersion: Int!
+  reason: String!
+  idempotencyKey: String!
 }
 
 input UpdateMyProfileInput {
