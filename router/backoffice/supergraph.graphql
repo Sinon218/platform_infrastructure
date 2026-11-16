@@ -1841,6 +1841,7 @@ type Query
   myProfileLinkStatus: ProfileAccountLink! @join__field(graph: USER) @authenticated
   profileLinkRequests(profileType: AccountType, status: String = "APPROVAL_PENDING", first: Int = 50): [ProfileLinkReview!]! @join__field(graph: USER) @authenticated
   userDirectory(accountType: AccountType!, search: String, first: Int = 25, after: String): UserDirectoryPage! @join__field(graph: USER) @authenticated
+  userProfile(accountType: AccountType!, profileId: ID!): UserProfileDetails! @join__field(graph: USER) @authenticated
   authorizationCatalog(accountType: AccountType!): [AuthorizationRole!]! @join__field(graph: USER) @authenticated
   authorizationSubject(subjectId: ID!): AuthorizationSubject! @join__field(graph: USER) @authenticated
   authorizationSubjectByAccount(accountType: AccountType!, accountId: ID!): AuthorizationSubject! @join__field(graph: USER) @authenticated
@@ -2116,6 +2117,29 @@ type UserDirectoryPage
   nodes: [UserDirectoryEntry!]!
   totalCount: Int!
   nextCursor: String
+}
+
+type UserProfileDetails
+  @join__type(graph: USER)
+{
+  profileId: ID!
+  accountId: ID
+  accountType: AccountType!
+  displayName: String!
+  email: String
+  contactPhone: String
+  status: String!
+  referenceCode: String
+  subtype: String
+  verificationStatus: String
+  relevantDate: String
+  address: String
+  taxCode: String
+  nationalityCode: String
+  documentType: String
+  version: Int!
+  createdAt: String!
+  updatedAt: String!
 }
 
 input VerifyProfileLinkInput

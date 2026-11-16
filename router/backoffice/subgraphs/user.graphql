@@ -14,6 +14,7 @@ type Query {
   myProfileLinkStatus: ProfileAccountLink! @authenticated
   profileLinkRequests(profileType: AccountType, status: String = "APPROVAL_PENDING", first: Int = 50): [ProfileLinkReview!]! @authenticated
   userDirectory(accountType: AccountType!, search: String, first: Int = 25, after: String): UserDirectoryPage! @authenticated
+  userProfile(accountType: AccountType!, profileId: ID!): UserProfileDetails! @authenticated
   authorizationCatalog(accountType: AccountType!): [AuthorizationRole!]! @authenticated
   authorizationSubject(subjectId: ID!): AuthorizationSubject! @authenticated
   authorizationSubjectByAccount(accountType: AccountType!, accountId: ID!): AuthorizationSubject! @authenticated
@@ -151,6 +152,27 @@ type UserDirectoryEntry {
   subtype: String
   verificationStatus: String
   joinedOn: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+type UserProfileDetails {
+  profileId: ID!
+  accountId: ID
+  accountType: AccountType!
+  displayName: String!
+  email: String
+  contactPhone: String
+  status: String!
+  referenceCode: String
+  subtype: String
+  verificationStatus: String
+  relevantDate: String
+  address: String
+  taxCode: String
+  nationalityCode: String
+  documentType: String
+  version: Int!
   createdAt: String!
   updatedAt: String!
 }
