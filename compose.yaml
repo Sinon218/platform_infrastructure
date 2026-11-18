@@ -8,6 +8,7 @@ services:
   vault:
     image: *vault-image
     profiles: ["dependencies", "epic01", "full"]
+    restart: unless-stopped
     command: ["server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-local-vistay-vault-root}
@@ -41,6 +42,7 @@ services:
   postgres:
     image: *postgres-image
     profiles: ["dependencies", "identity", "edge", "epic01", "full"]
+    restart: unless-stopped
     environment:
       POSTGRES_DB: vistay
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
@@ -73,6 +75,7 @@ services:
   redis:
     image: redis:8.10.2-alpine
     profiles: ["dependencies", "epic01", "full"]
+    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD}"]
     ports:
       - "${REDIS_BIND_ADDRESS:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
@@ -90,6 +93,7 @@ services:
   kafka:
     image: *kafka-image
     profiles: ["dependencies", "epic01", "full"]
+    restart: unless-stopped
     hostname: kafka
     environment:
       KAFKA_NODE_ID: 1
@@ -169,6 +173,7 @@ services:
       args:
         MINIO_VERSION: RELEASE.2025-10-15T17-29-55Z
     profiles: ["dependencies", "full"]
+    restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
