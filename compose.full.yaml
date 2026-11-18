@@ -72,6 +72,7 @@ services:
     container_name: service-authentication
     build: ../service_authentication
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       OTEL_SERVICE_NAME: vistay-authentication-service
@@ -110,6 +111,7 @@ services:
     container_name: service-user
     build: ../service_user
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       OTEL_SERVICE_NAME: vistay-user-service
@@ -159,6 +161,7 @@ services:
     container_name: service-notification
     build: ../service_notification
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       OTEL_SERVICE_NAME: vistay-notification-service
@@ -202,6 +205,7 @@ services:
     container_name: service-property
     build: ../service_property
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_property_db
@@ -239,6 +243,7 @@ services:
     container_name: service-booking
     build: ../service_booking
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       SPRING_PROFILES_ACTIVE: docker
@@ -286,6 +291,7 @@ services:
     container_name: service-finance
     build: ../service_finance
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_finance_db
@@ -318,6 +324,7 @@ services:
     container_name: service-payment
     build: ../service_payment
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_payment_db
@@ -364,6 +371,7 @@ services:
     container_name: service-operations
     build: ../service_operations
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_operations_db
@@ -380,6 +388,7 @@ services:
     container_name: service-ota
     build: ../service_ota
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_ota_db
@@ -396,6 +405,7 @@ services:
     container_name: service-media
     build: ../service_media
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_media_db
@@ -418,6 +428,7 @@ services:
     container_name: service-data-warehouse
     build: ../service_data_warehouse
     profiles: ["full"]
+    restart: unless-stopped
     environment:
       <<: *service-environment
       DB_NAME: vistay_warehouse_db
@@ -433,18 +444,21 @@ services:
   frontend-customer:
     build: ../frontend_customer
     profiles: ["full"]
+    restart: unless-stopped
     expose: ["8080"]
     networks: [vistay]
 
   frontend-host:
     build: ../frontend_host
     profiles: ["full"]
+    restart: unless-stopped
     expose: ["8080"]
     networks: [vistay]
 
   frontend-admin:
     build: ../frontend_admin
     profiles: ["epic01", "full"]
+    restart: unless-stopped
     expose: ["8080"]
     depends_on:
       router-backoffice:

@@ -195,11 +195,19 @@ type Booking
   id: ID!
   bookingCode: String!
   propertyId: ID!
+  customerId: ID
+  guestName: String!
+  guestPhone: String!
+  guestEmail: String
+  propertyName: String
+  branchId: ID
   status: String!
   checkInDate: String!
   checkOutDate: String!
   totalAmount: String
   currency: String!
+  createdAt: String!
+  version: String!
 }
 
 input BookingCancellationRulesInput
@@ -325,6 +333,23 @@ input BookingPolicySimulationInput
   advanceDays: Int!
 }
 
+type BookingTimeline
+  @join__type(graph: BOOKING)
+{
+  nodes: [Booking!]!
+  fromDate: String!
+  toDateExclusive: String!
+  truncated: Boolean!
+}
+
+input BookingTimelineInput
+  @join__type(graph: BOOKING)
+{
+  propertyIds: [ID!]!
+  fromDate: String!
+  toDateExclusive: String!
+}
+
 input CalculatePropertyPriceQuoteInput
   @join__type(graph: BOOKING)
 {
@@ -346,6 +371,105 @@ input CancelPaymentIntentInput
   reason: String!
 }
 
+input CreateAdminProfileInput
+  @join__type(graph: USER)
+{
+  fullName: String!
+  email: String
+  contactPhone: String
+  employeeCode: String
+  subtype: String! = "STAFF"
+  hiredOn: String
+  reason: String
+  idempotencyKey: String!
+}
+
+input CreateAreaInput
+  @join__type(graph: PROPERTY)
+{
+  cityId: ID!
+  code: String!
+  name: String!
+}
+
+input CreateBookingInput
+  @join__type(graph: BOOKING)
+{
+  idempotencyKey: String!
+  propertyId: ID!
+  propertyName: String!
+  hostProfileId: ID
+  customerProfileId: ID
+  guestName: String!
+  guestPhone: String!
+  guestEmail: String
+  checkInDate: String!
+  checkOutDate: String!
+  adults: Int = 1
+  children: Int = 0
+  stayType: String = "SHORT_TERM"
+  unitPrice: String!
+  discountAmount: String = "0"
+  feeAmount: String = "0"
+  taxAmount: String = "0"
+  currency: String = "VND"
+  notes: String
+}
+
+input CreateBuildingFloorInput
+  @join__type(graph: PROPERTY)
+{
+  buildingId: ID!
+  code: String!
+  name: String!
+  floorNumber: Int
+  sortOrder: Int = 0
+}
+
+input CreateBuildingInput
+  @join__type(graph: PROPERTY)
+{
+  areaId: ID!
+  code: String!
+  name: String!
+  address: String!
+}
+
+input CreateCityInput
+  @join__type(graph: PROPERTY)
+{
+  code: String!
+  name: String!
+}
+
+input CreateCustomerProfileInput
+  @join__type(graph: USER)
+{
+  fullName: String!
+  email: String
+  contactPhone: String
+  dateOfBirth: String
+  nationalityCode: String! = "VN"
+  documentType: String!
+  documentNumber: String!
+  address: String
+  reason: String
+  idempotencyKey: String!
+}
+
+input CreateHostProfileInput
+  @join__type(graph: USER)
+{
+  fullName: String!
+  email: String
+  contactPhone: String
+  hostCode: String
+  address: String
+  taxCode: String
+  reason: String
+  idempotencyKey: String!
+}
+
 input CreateInventoryBlockInput
   @join__type(graph: BOOKING)
 {
@@ -357,6 +481,24 @@ input CreateInventoryBlockInput
   expectedInventoryRevision: String!
   reason: String!
   correlationId: String!
+}
+
+input CreateOwnerContractInput
+  @join__type(graph: PROPERTY)
+{
+  contractNumber: String!
+  propertyId: ID!
+  hostProfileId: ID!
+  operatingModel: String!
+  startDate: String!
+  endDate: String!
+  fixedAmount: String
+  managementFeePercent: String
+  paymentPeriod: String = "MONTH"
+  paymentCycleCount: Int = 1
+  currency: String = "VND"
+  status: String = "ACTIVE"
+  notes: String
 }
 
 input CreatePropertyPriceQuoteSnapshotInput
@@ -392,6 +534,23 @@ input CreatePropertyRateProfileVersionInput
   rules: [PricingRuleVersionInput!]! = []
 }
 
+input CreatePropertyUnitInput
+  @join__type(graph: PROPERTY)
+{
+  floorId: ID!
+  branchId: ID!
+  code: String!
+  unitNumber: String
+  name: String!
+  operatingModel: String!
+  areaSqm: String
+  bedroomCount: Int = 0
+  bathroomCount: Int = 0
+  capacity: Int = 1
+  basePricePerNight: String
+  currency: String = "VND"
+}
+
 input CreateRoleInput
   @join__type(graph: USER)
 {
@@ -417,6 +576,13 @@ unchanged; its numeric representation is an implementation detail.
 """
 scalar Cursor
   @join__type(graph: NOTIFICATION)
+
+type CustomerContactAvailability
+  @join__type(graph: USER)
+{
+  emailAvailable: Boolean
+  phoneAvailable: Boolean
+}
 
 enum DataScope
   @join__type(graph: USER)
@@ -462,6 +628,12 @@ type FinanceDashboardSummary
   totalSettlementCount: Int!
   approvedSettlementCount: Int!
   paidSettlementCount: Int!
+}
+
+type IdentityDocumentAvailability
+  @join__type(graph: USER)
+{
+  available: Boolean!
 }
 
 type IdentityPolicy
@@ -741,6 +913,11 @@ type Mutation
   @join__type(graph: PROPERTY)
   @join__type(graph: USER)
 {
+  createBooking(input: CreateBookingInput!): Booking! @join__field(graph: BOOKING) @authenticated
+  confirmBooking(id: ID!, expectedVersion: String!, reason: String!): Booking! @join__field(graph: BOOKING) @authenticated
+  checkInBooking(id: ID!, expectedVersion: String!, reason: String!): Booking! @join__field(graph: BOOKING) @authenticated
+  checkOutBooking(id: ID!, expectedVersion: String!, reason: String!): Booking! @join__field(graph: BOOKING) @authenticated
+  cancelBooking(id: ID!, expectedVersion: String!, reason: String!): Booking! @join__field(graph: BOOKING) @authenticated
   requestBookingPolicyChange(input: BookingPolicyChangeInput!): BookingPolicyChangeRequest! @join__field(graph: BOOKING) @authenticated
   approveBookingPolicyChange(id: ID!, reason: String!): BookingPolicyChangeRequest! @join__field(graph: BOOKING) @authenticated
   rejectBookingPolicyChange(id: ID!, reason: String!): BookingPolicyChangeRequest! @join__field(graph: BOOKING) @authenticated
@@ -776,6 +953,12 @@ type Mutation
   resolveNotificationRecipientException(input: ResolveRecipientExceptionInput!): NotificationRecipientException! @join__field(graph: NOTIFICATION) @authenticated
   createVietQrPaymentIntent(input: CreateVietQrPaymentIntentInput!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
   cancelPaymentIntent(input: CancelPaymentIntentInput!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
+  createCity(input: CreateCityInput!): PropertyCity! @join__field(graph: PROPERTY) @authenticated
+  createArea(input: CreateAreaInput!): PropertyArea! @join__field(graph: PROPERTY) @authenticated
+  createBuilding(input: CreateBuildingInput!): PropertyBuilding! @join__field(graph: PROPERTY) @authenticated
+  createBuildingFloor(input: CreateBuildingFloorInput!): PropertyFloor! @join__field(graph: PROPERTY) @authenticated
+  createPropertyUnit(input: CreatePropertyUnitInput!): PropertyUnit! @join__field(graph: PROPERTY) @authenticated
+  createOwnerContract(input: CreateOwnerContractInput!): OwnerContract! @join__field(graph: PROPERTY) @authenticated
   createPropertyAttributeDraft(input: PropertyAttributeDraftInput!): PropertyAttributeDefinition! @join__field(graph: PROPERTY) @authenticated
   publishPropertyAttribute(definitionId: ID!, expectedRowVersion: String!, reason: String!): PropertyAttributeDefinition! @join__field(graph: PROPERTY) @authenticated
   retirePropertyAttribute(definitionId: ID!, expectedRowVersion: String!, reason: String!): PropertyAttributeDefinition! @join__field(graph: PROPERTY) @authenticated
@@ -801,6 +984,9 @@ type Mutation
   verifyMyProfileLink(input: VerifyProfileLinkInput!): ProfileAccountLink! @join__field(graph: USER) @authenticated
   approveProfileLink(input: ApproveProfileLinkInput!): ProfileAccountLink! @join__field(graph: USER) @authenticated
   rejectProfileLink(input: RejectProfileLinkInput!): ProfileAccountLink! @join__field(graph: USER) @authenticated
+  createCustomerProfile(input: CreateCustomerProfileInput!): UserProfileDetails! @join__field(graph: USER) @authenticated
+  createAdminProfile(input: CreateAdminProfileInput!): UserProfileDetails! @join__field(graph: USER) @authenticated
+  createHostProfile(input: CreateHostProfileInput!): UserProfileDetails! @join__field(graph: USER) @authenticated
   updateIdentityPolicy(input: UpdateIdentityPolicyInput!): IdentityPolicy! @join__field(graph: USER) @authenticated
 }
 
@@ -1153,6 +1339,14 @@ enum NotificationTemplateStatus
   RETIRED @join__enumValue(graph: NOTIFICATION)
 }
 
+type OperatingBranch
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  code: String!
+  name: String!
+}
+
 type OperationsAnalytics
   @join__type(graph: BOOKING)
 {
@@ -1216,6 +1410,44 @@ enum OverviewView
 {
   SYSTEM @join__enumValue(graph: BOOKING)
   PERSONAL @join__enumValue(graph: BOOKING)
+}
+
+type OwnerContract
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  contractNumber: String!
+  startDate: String!
+  endDate: String!
+  status: String!
+  notes: String
+  version: String!
+  parties: [OwnerContractParty!]!
+  propertyTerms: [OwnerContractPropertyTerm!]!
+}
+
+type OwnerContractParty
+  @join__type(graph: PROPERTY)
+{
+  hostProfileId: ID!
+  partyRole: String!
+  ownershipPercent: String
+  primary: Boolean!
+}
+
+type OwnerContractPropertyTerm
+  @join__type(graph: PROPERTY)
+{
+  propertyId: ID!
+  operatingModel: String!
+  effectiveFrom: String!
+  effectiveTo: String!
+  fixedAmount: String
+  managementFeePercent: String
+  paymentPeriod: String!
+  paymentCycleCount: Int!
+  currency: String!
+  status: String!
 }
 
 type PaymentIntent
@@ -1490,6 +1722,16 @@ type ProfileLinkReview
   displayName: String
 }
 
+type PropertyArea
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  cityId: ID!
+  code: String!
+  name: String!
+  buildings: [PropertyBuilding!]!
+}
+
 input PropertyAttributeApplicabilityInput
   @join__type(graph: PROPERTY)
 {
@@ -1608,12 +1850,50 @@ type PropertyAvailabilityObservation
   overlaps: [InventoryAvailabilityOverlap!]!
 }
 
+type PropertyBuilding
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  areaId: ID!
+  code: String!
+  name: String!
+  address: String!
+  floors: [PropertyFloor!]!
+}
+
+type PropertyCity
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  code: String!
+  name: String!
+  areas: [PropertyArea!]!
+}
+
+type PropertyFloor
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  buildingId: ID!
+  code: String!
+  name: String!
+  floorNumber: Int
+  units: [PropertyUnit!]!
+}
+
 type PropertyOperationalSummary
   @join__type(graph: PROPERTY)
 {
   activeProperties: Int!
   maintenanceProperties: Int!
   propertiesNeedingAttention: Int!
+}
+
+type PropertyPortfolio
+  @join__type(graph: PROPERTY)
+{
+  branches: [OperatingBranch!]!
+  cities: [PropertyCity!]!
 }
 
 type PropertyPriceFinalQuote
@@ -1719,6 +1999,27 @@ type PropertyRateProfileVersion
   rules: [PricingRuleVersion!]!
 }
 
+type PropertyUnit
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  floorId: ID!
+  branchId: ID
+  code: String!
+  unitNumber: String
+  name: String!
+  operatingModel: String!
+  operationalStatus: String!
+  areaSqm: String
+  bedroomCount: Int!
+  bathroomCount: Int!
+  capacity: Int!
+  basePricePerNight: String
+  currency: String!
+  hostProfileId: ID
+  version: String!
+}
+
 type ProtectedIdentityDocument
   @join__type(graph: USER)
 {
@@ -1809,6 +2110,7 @@ type Query
   overviewAnalytics(view: OverviewView!, input: AnalyticsRangeInput!): OverviewAnalytics! @join__field(graph: BOOKING) @authenticated
   booking(id: ID!): Booking! @join__field(graph: BOOKING) @authenticated
   bookings(status: String, limit: Int = 50): [Booking!]! @join__field(graph: BOOKING) @authenticated
+  bookingTimeline(input: BookingTimelineInput!): BookingTimeline! @join__field(graph: BOOKING) @authenticated
   propertyAvailability(input: PropertyAvailabilityInput!): PropertyAvailabilityObservation! @join__field(graph: BOOKING) @authenticated
   inventoryBlocks(input: InventoryBlockManagementInput!): InventoryBlockManagementPage! @join__field(graph: BOOKING) @authenticated
   propertyRateProfileVersion(id: ID!): PropertyRateProfileVersion! @join__field(graph: BOOKING) @authenticated
@@ -1843,6 +2145,8 @@ type Query
   """List recipient exceptions for authorized support operations."""
   notificationRecipientExceptions(input: RecipientExceptionQueryInput): RecipientExceptionConnection! @join__field(graph: NOTIFICATION) @authenticated
   paymentIntent(id: ID!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
+  propertyPortfolio(search: String, operatingModel: String): PropertyPortfolio! @join__field(graph: PROPERTY) @authenticated
+  ownerContracts(propertyId: ID, status: String): [OwnerContract!]! @join__field(graph: PROPERTY) @authenticated
   propertyAttributeCatalog(includeDrafts: Boolean! = false): [PropertyAttributeDefinition!]! @join__field(graph: PROPERTY) @authenticated
   propertyAttributeValues(propertyId: ID!): [PropertyAttributeValue!]! @join__field(graph: PROPERTY) @authenticated
   propertyOperationalSummary: PropertyOperationalSummary! @join__field(graph: PROPERTY) @authenticated
@@ -1859,6 +2163,8 @@ type Query
   profileLinkRequests(profileType: AccountType, status: String = "APPROVAL_PENDING", first: Int = 50): [ProfileLinkReview!]! @join__field(graph: USER) @authenticated
   userDirectory(accountType: AccountType!, search: String, first: Int = 25, after: String): UserDirectoryPage! @join__field(graph: USER) @authenticated
   userProfile(accountType: AccountType!, profileId: ID!): UserProfileDetails! @join__field(graph: USER) @authenticated
+  customerIdentityDocumentAvailability(nationalityCode: String!, documentType: String!, documentNumber: String!): IdentityDocumentAvailability! @join__field(graph: USER) @authenticated
+  customerContactAvailability(email: String, contactPhone: String): CustomerContactAvailability! @join__field(graph: USER) @authenticated
   identityPolicies: [IdentityPolicy!]! @join__field(graph: USER) @authenticated
   authorizationCatalog(accountType: AccountType!): [AuthorizationRole!]! @join__field(graph: USER) @authenticated
   authorizationSubject(subjectId: ID!): AuthorizationSubject! @join__field(graph: USER) @authenticated

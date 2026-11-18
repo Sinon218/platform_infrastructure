@@ -56,8 +56,11 @@ create_topic vistay.payment.qr-ready.v1
 create_topic vistay.payment.intent-expired.v1
 create_topic vistay.payment.transaction-confirmed.v1
 create_topic vistay.payment.transaction-unmatched.v1
+create_topic vistay.booking.events
 create_topic vistay.booking.rate-profile-published.v1
 create_topic vistay.booking.inventory-block-changed.v1
+create_topic vistay.finance.expense-approved.v1
+create_topic vistay.finance.revenue-recognized.v1
 
 grant_producer() {
   local principal="$1"
@@ -120,6 +123,10 @@ grant_producer vistay-payment vistay.payment.intent-expired.v1
 grant_producer vistay-payment vistay.payment.transaction-confirmed.v1
 grant_producer vistay-payment vistay.payment.transaction-unmatched.v1
 grant_consumer vistay-finance vistay.payment.transaction-confirmed.v1 vistay-finance-payment-confirmed-v1
+grant_consumer vistay-warehouse vistay.booking.events warehouse-booking-consumer
+grant_consumer vistay-warehouse vistay.payment.transaction-confirmed.v1 warehouse-payment-consumer
+grant_consumer vistay-warehouse vistay.finance.expense-approved.v1 warehouse-expense-consumer
+grant_consumer vistay-warehouse vistay.finance.revenue-recognized.v1 warehouse-revenue-consumer
 grant_producer vistay-booking vistay.booking.rate-profile-published.v1
 grant_producer vistay-booking vistay.booking.inventory-block-changed.v1
 
