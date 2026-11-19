@@ -175,6 +175,8 @@ type UserProfileDetails {
   relevantDate: String
   address: String
   taxCode: String
+  nationalityCode: String
+  documentType: String
   version: Int!
   createdAt: String!
   updatedAt: String!
