@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: local
+    platform: vistay
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: nginx
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+
+  - job_name: backoffice-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - authentication:8080
+          - user:8080
+          - notification:8080
+          - property:8080
+          - booking:8080

@@ -1,0 +1,238 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "row", "title": "Nền tảng & lưu lượng", "id": 1, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false, "panels": []
+    },
+    {
+      "type": "stat", "title": "Service sẵn sàng", "id": 2, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(up{job=\"backoffice-services\"})", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value_and_name", "colorMode": "background" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }
+    },
+    {
+      "type": "stat", "title": "Lưu lượng hiện tại", "id": 3, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(rate(http_server_requests_seconds_count{application=~\"vistay-.*\"}[5m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "decimals": 2, "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 }
+    },
+    {
+      "type": "stat", "title": "Lỗi máy chủ (5 phút)", "id": 4, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(increase(http_server_requests_seconds_count{status=~\"5..\"}[5m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value_and_name", "colorMode": "background" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 }
+    },
+    {
+      "type": "stat", "title": "Phản hồi trung bình", "id": 5, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(rate(http_server_requests_seconds_sum{application=~\"vistay-.*\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=~\"vistay-.*\"}[5m])), 0.001)", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 3, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 3 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 }
+    },
+    {
+      "type": "timeseries", "title": "Lưu lượng theo dịch vụ", "id": 6, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum by (application) (rate(http_server_requests_seconds_count{application=~\"vistay-.*\"}[5m]))", "legendFormat": "{{application}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 }
+    },
+    {
+      "type": "timeseries", "title": "Lỗi HTTP theo dịch vụ", "id": 7, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum by (application, status) (rate(http_server_requests_seconds_count{application=~\"vistay-.*\",status=~\"4..|5..\"}[5m]))", "legendFormat": "{{application}} {{status}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }
+    },
+    {
+      "type": "timeseries", "title": "Nginx: kết nối và request", "id": 8, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [
+        { "expr": "nginx_connections_active", "legendFormat": "Kết nối active", "refId": "A" },
+        { "expr": "rate(nginx_http_requests_total[5m])", "legendFormat": "Request/giây", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 }
+    },
+    {
+      "type": "row", "title": "Khách hàng & người dùng", "id": 9, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "collapsed": false, "panels": []
+    },
+    {
+      "type": "stat", "title": "Khách hàng hoạt động", "id": 10, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_user_profiles{account_type=\"CUSTOMER\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 18 }
+    },
+    {
+      "type": "stat", "title": "Chủ nhà hoạt động", "id": 11, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_user_profiles{account_type=\"HOST\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 18 }
+    },
+    {
+      "type": "stat", "title": "Nhân viên hoạt động", "id": 12, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_user_profiles{account_type=\"ADMIN\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 18 }
+    },
+    {
+      "type": "stat", "title": "Hồ sơ đã liên kết", "id": 13, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(vistay_user_linked_profiles)", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 18 }
+    },
+    {
+      "type": "stat", "title": "Hồ sơ mới (24 giờ)", "id": 14, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum(increase(vistay_user_profile_creations_total[24h]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 18 }
+    },
+    {
+      "type": "timeseries", "title": "Hồ sơ mới theo loại", "id": 15, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum by (account_type) (increase(vistay_user_profile_creations_total[1h]))", "legendFormat": "{{account_type}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 22 }
+    },
+    {
+      "type": "bargauge", "title": "Tỷ lệ hồ sơ đã liên kết", "id": 16, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "100 * vistay_user_linked_profiles / clamp_min(vistay_user_profiles, 1)", "legendFormat": "{{account_type}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 50 }, { "color": "green", "value": 85 }] } }, "overrides": [] },
+      "options": { "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 22 }
+    },
+    {
+      "type": "table", "title": "Trạng thái scrape", "id": 17, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "up{job=~\"backoffice-services|nginx\"}", "format": "table", "instant": true, "refId": "A" }],
+      "options": { "showHeader": true, "cellHeight": "sm" },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 22 }
+    },
+    {
+      "type": "row", "title": "Đặt phòng & vận hành", "id": 18, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 }, "collapsed": false, "panels": []
+    },
+    {
+      "type": "stat", "title": "Chờ xác nhận", "id": 19, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_records{status=\"PENDING_CONFIRMATION\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "background" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 31 }
+    },
+    {
+      "type": "stat", "title": "Đang lưu trú", "id": 20, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_records{status=\"CHECKED_IN\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 31 }
+    },
+    {
+      "type": "stat", "title": "Đến hôm nay", "id": 21, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_arrivals{window=\"today\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 31 }
+    },
+    {
+      "type": "stat", "title": "Rời hôm nay", "id": 22, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_departures{window=\"today\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 31 }
+    },
+    {
+      "type": "stat", "title": "Giá trị booking xác nhận", "id": 23, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_confirmed_value{currency=\"VND\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "currencyVND", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 31 }
+    },
+    {
+      "type": "timeseries", "title": "Booking theo trạng thái", "id": 24, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_booking_records", "legendFormat": "{{status}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 }
+    },
+    {
+      "type": "timeseries", "title": "Lệnh booking thành công", "id": 25, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum by (operation) (increase(vistay_booking_commands_total[1h]))", "legendFormat": "{{operation}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 }
+    },
+    {
+      "type": "row", "title": "Danh mục căn hộ & tài nguyên", "id": 26, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 }, "collapsed": false, "panels": []
+    },
+    {
+      "type": "stat", "title": "Toà nhà", "id": 27, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_property_buildings", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 44 }
+    },
+    {
+      "type": "stat", "title": "Căn hoạt động", "id": 28, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_property_units{status=\"ACTIVE\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 44 }
+    },
+    {
+      "type": "stat", "title": "Căn bảo trì", "id": 29, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_property_units{status=\"MAINTENANCE\"}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "background" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 44 }
+    },
+    {
+      "type": "stat", "title": "Căn mới (24 giờ)", "id": 30, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "increase(vistay_property_unit_creations_total[24h])", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name", "colorMode": "value" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 44 }
+    },
+    {
+      "type": "bargauge", "title": "Danh mục căn theo trạng thái", "id": 31, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "vistay_property_units", "legendFormat": "{{status}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 44 }
+    },
+    {
+      "type": "timeseries", "title": "CPU tiến trình JVM", "id": 32, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "process_cpu_usage{application=~\"vistay-.*\"}", "legendFormat": "{{application}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 }
+    },
+    {
+      "type": "timeseries", "title": "JVM memory used", "id": 33, "datasource": { "uid": "vistay-prometheus" },
+      "targets": [{ "expr": "sum by (application) (jvm_memory_used_bytes{application=~\"vistay-.*\",area=\"heap\"})", "legendFormat": "{{application}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 52 }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": ["vistay", "operations", "booking", "customers"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "browser",
+  "title": "ViStay — Vận hành & Kinh doanh",
+  "uid": "vistay-platform-overview",
+  "version": 1
+}
