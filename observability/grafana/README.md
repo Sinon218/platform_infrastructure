@@ -20,6 +20,11 @@ The provisioned **ViStay — Vận hành & Kinh doanh** dashboard covers:
   confirmed VND booking value;
 - city/building/unit inventory and JVM CPU/memory pressure.
 
+The separate **ViStay — System Health & API Performance** dashboard is the
+operator/SRE view. It includes service availability, request/error throughput,
+real HTTP P50/P95/P99 latency, CPU, heap pressure, JVM threads and GC, HikariCP
+connection pools, Nginx traffic, scrape health, and per-service filtering.
+
 Prometheus is intentionally bound to loopback at `http://127.0.0.1:9090`.
 Only Grafana is exposed on port 3000. Business gauges use aggregate labels
 only: no email, phone number, document number, profile ID, or booking ID is

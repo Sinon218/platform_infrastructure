@@ -14,10 +14,16 @@ $compose = @(
     '--profile', 'full'
 )
 
-$dashboardPath = Join-Path $root 'observability/grafana/dashboards/vistay-platform-overview.json'
-$dashboard = Get-Content -Raw -LiteralPath $dashboardPath | ConvertFrom-Json
-if ($dashboard.uid -ne 'vistay-platform-overview' -or $dashboard.panels.Count -lt 20) {
-    throw 'The ViStay Grafana dashboard is missing required panels.'
+$dashboardContracts = @(
+    @{ Path = 'observability/grafana/dashboards/vistay-platform-overview.json'; Uid = 'vistay-platform-overview'; MinimumPanels = 20 },
+    @{ Path = 'observability/grafana/dashboards/vistay-system-health.json'; Uid = 'vistay-system-health'; MinimumPanels = 25 }
+)
+foreach ($contract in $dashboardContracts) {
+    $dashboardPath = Join-Path $root $contract.Path
+    $dashboard = Get-Content -Raw -LiteralPath $dashboardPath | ConvertFrom-Json
+    if ($dashboard.uid -ne $contract.Uid -or $dashboard.panels.Count -lt $contract.MinimumPanels) {
+        throw "The ViStay Grafana dashboard $($contract.Uid) is missing required panels."
+    }
 }
 
 & docker @compose config -q
@@ -69,7 +75,9 @@ if (-not $grafanaUserLine -or -not $grafanaPasswordLine) {
 $grafanaUser = ($grafanaUserLine -split '=', 2)[1]
 $grafanaPassword = ($grafanaPasswordLine -split '=', 2)[1]
 $basicValue = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($grafanaUser + ':' + $grafanaPassword))
-$dashboardResponse = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$grafanaPort/api/dashboards/uid/vistay-platform-overview" -Headers @{ Authorization = "Basic $basicValue" } -TimeoutSec 10
-if ($dashboardResponse.StatusCode -ne 200) { throw 'Provisioned Grafana dashboard is unavailable.' }
+foreach ($contract in $dashboardContracts) {
+    $dashboardResponse = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$grafanaPort/api/dashboards/uid/$($contract.Uid)" -Headers @{ Authorization = "Basic $basicValue" } -TimeoutSec 10
+    if ($dashboardResponse.StatusCode -ne 200) { throw "Provisioned Grafana dashboard $($contract.Uid) is unavailable." }
+}
 
 Write-Host 'Grafana observability runtime contract passed.'

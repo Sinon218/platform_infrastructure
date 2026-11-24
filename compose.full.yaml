@@ -19,6 +19,7 @@ x-service-environment: &service-environment
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
   MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${OTEL_SAMPLING_PROBABILITY:-1.0}
   MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED: "false"
+  SPRING_APPLICATION_JSON: '{"management":{"metrics":{"distribution":{"percentiles-histogram":{"http.server.requests":true}}}}}'
 
 x-service-dependencies: &service-dependencies
   postgres:
