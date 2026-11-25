@@ -201,8 +201,11 @@ input CreateCustomerProfileInput {
   email: String
   contactPhone: String
   dateOfBirth: String
+  nationalityCode: String! = "VN"
+  documentType: String!
+  documentNumber: String!
   address: String
-  reason: String!
+  reason: String
   idempotencyKey: String!
 }
 
@@ -213,7 +216,7 @@ input CreateAdminProfileInput {
   employeeCode: String
   subtype: String! = "STAFF"
   hiredOn: String
-  reason: String!
+  reason: String
   idempotencyKey: String!
 }
 
@@ -224,7 +227,7 @@ input CreateHostProfileInput {
   hostCode: String
   address: String
   taxCode: String
-  reason: String!
+  reason: String
   idempotencyKey: String!
 }
 

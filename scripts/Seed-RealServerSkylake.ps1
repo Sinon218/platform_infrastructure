@@ -3,7 +3,8 @@ param(
   [string]$AccessToken,
   [string]$GraphqlUrl = 'https://api-vistay.fakebook.tech/graphqloffice',
   [string]$AccessCodeFile = 'D:\Vistay\.secrets\skylake-access-codes.json',
-  [datetime]$BookingStartDate = [datetime]'2026-11-26'
+  [datetime]$BookingStartDate = [datetime]'2026-11-26',
+  [switch]$SkipAccessCredentials
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,7 +30,8 @@ function Invoke-ViStayGraphql {
       $code = $_.extensions.code
       if ($code) { "$code`: $($_.message)" } else { $_.message }
     })
-    throw "GraphQL failed: $($messages -join '; ')"
+    $operationLabel = if ($OperationName) { $OperationName } else { 'unnamed-operation' }
+    throw "GraphQL operation $operationLabel failed: $($messages -join '; ')"
   }
   return $response.data
 }
@@ -61,9 +63,9 @@ query SeedPortfolio {
 }
 
 function New-Profile {
-  param([ValidateSet('CUSTOMER', 'HOST')][string]$Type, [hashtable]$Input)
+  param([ValidateSet('CUSTOMER', 'HOST')][string]$Type, [hashtable]$ProfileInput)
   if ($Type -eq 'CUSTOMER') {
-    return (Invoke-ViStayGraphql -OperationName 'SeedCustomer' -Variables @{ input = $Input } -Query @'
+    return (Invoke-ViStayGraphql -OperationName 'SeedCustomer' -Variables @{ input = $ProfileInput } -Query @'
 mutation SeedCustomer($input: CreateCustomerProfileInput!) {
   createCustomerProfile(input: $input) {
     profileId accountId accountType displayName email contactPhone status referenceCode version
@@ -71,7 +73,7 @@ mutation SeedCustomer($input: CreateCustomerProfileInput!) {
 }
 '@).createCustomerProfile
   }
-  return (Invoke-ViStayGraphql -OperationName 'SeedHost' -Variables @{ input = $Input } -Query @'
+  return (Invoke-ViStayGraphql -OperationName 'SeedHost' -Variables @{ input = $ProfileInput } -Query @'
 mutation SeedHost($input: CreateHostProfileInput!) {
   createHostProfile(input: $input) {
     profileId accountId accountType displayName email contactPhone status referenceCode version
@@ -320,24 +322,26 @@ $city = @($portfolio.cities | Where-Object code -eq '01' | Select-Object -First 
 $area = @($city.areas | Where-Object code -eq 'SKYLAKE' | Select-Object -First 1)
 $unitsForAccess = @($area.buildings | ForEach-Object { $_.floors } | ForEach-Object { $_.units } |
   Where-Object { $_.code -in $unitCodes })
-foreach ($unit in $unitsForAccess) {
-  $credential = (Invoke-ViStayGraphql -OperationName 'SeedAccessCredentialStatus' -Variables @{
-    propertyId = $unit.id
-  } -Query @'
+if (-not $SkipAccessCredentials) {
+  foreach ($unit in $unitsForAccess) {
+    $credential = (Invoke-ViStayGraphql -OperationName 'SeedAccessCredentialStatus' -Variables @{
+      propertyId = $unit.id
+    } -Query @'
 query SeedAccessCredentialStatus($propertyId: ID!) {
   propertyAccessCredential(propertyId: $propertyId) { propertyId configured keyVersion version }
 }
 '@).propertyAccessCredential
-  if ($credential.configured) { continue }
-  $null = Invoke-ViStayGraphql -OperationName 'SeedAccessCredential' -Variables @{ input = @{
-    propertyId = $unit.id
-    accessCode = $accessCodes.PSObject.Properties[$unit.code].Value
-    expectedVersion = $credential.version
-  } } -Query @'
+    if ($credential.configured) { continue }
+    $null = Invoke-ViStayGraphql -OperationName 'SeedAccessCredential' -Variables @{ input = @{
+      propertyId = $unit.id
+      accessCode = $accessCodes.PSObject.Properties[$unit.code].Value
+      expectedVersion = $credential.version
+    } } -Query @'
 mutation SeedAccessCredential($input: PropertyAccessCredentialInput!) {
   setPropertyAccessCredential(input: $input) { propertyId configured keyVersion version }
 }
 '@
+  }
 }
 
 $hosts = @()
@@ -345,7 +349,7 @@ foreach ($tower in @('S1', 'S2', 'S3')) {
   $email = "skylake.owner.$($tower.ToLowerInvariant())@vistay.local"
   $existing = @(Get-Directory -Type HOST -Search $email).nodes | Where-Object email -eq $email | Select-Object -First 1
   if ($existing) { $hosts += $existing; continue }
-  $hosts += New-Profile -Type HOST -Input @{
+  $hosts += New-Profile -Type HOST -ProfileInput @{
     fullName = "Chu nha Skylake $tower"
     email = $email
     contactPhone = "+84920010$($tower.Substring(1).PadLeft(2, '0'))"
@@ -363,7 +367,7 @@ for ($index = 1; $index -le 10; $index++) {
   $existing = @(Get-Directory -Type CUSTOMER -Search $email).nodes | Where-Object email -eq $email | Select-Object -First 1
   if ($existing) { $customers += $existing; continue }
   $document = '{0:D12}' -f ([long]100100000000 + $index)
-  $customers += New-Profile -Type CUSTOMER -Input @{
+  $customers += New-Profile -Type CUSTOMER -ProfileInput @{
     fullName = ('Khach Skylake {0:D2}' -f $index)
     email = $email
     contactPhone = ('+84910010{0:D2}' -f $index)
@@ -512,6 +516,10 @@ if (@($createdBookings).Count -ne 20) { throw "Expected 20 booking results, foun
   timelineBookings = @($timeline.nodes).Count
   timelineTruncated = $timeline.truncated
   idempotencyReplayPassed = $true
-  accessPasswordsSeeded = $true
-  accessPasswordStorage = 'Vault Transit ciphertext only; GraphQL never returns raw access codes or ciphertext.'
+  accessPasswordsSeeded = -not $SkipAccessCredentials
+  accessPasswordStorage = if ($SkipAccessCredentials) {
+    'Deferred because server Vault Transit is unavailable.'
+  } else {
+    'Vault Transit ciphertext only; GraphQL never returns raw access codes or ciphertext.'
+  }
 }
