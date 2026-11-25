@@ -2,6 +2,7 @@ extend schema @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@
 
 type Query {
   propertyPortfolio(search: String, operatingModel: String): PropertyPortfolio! @authenticated
+  propertyAccessCredential(propertyId: ID!): PropertyAccessCredential! @authenticated
   ownerContracts(propertyId: ID, status: String): [OwnerContract!]! @authenticated
   propertyAttributeCatalog(includeDrafts: Boolean! = false): [PropertyAttributeDefinition!]! @authenticated
   propertyAttributeValues(propertyId: ID!): [PropertyAttributeValue!]! @authenticated
@@ -9,11 +10,13 @@ type Query {
 }
 type PropertyOperationalSummary { activeProperties: Int!, maintenanceProperties: Int!, propertiesNeedingAttention: Int! }
 type Mutation {
+  createOperatingBranch(input: CreateOperatingBranchInput!): OperatingBranch! @authenticated
   createCity(input: CreateCityInput!): PropertyCity! @authenticated
   createArea(input: CreateAreaInput!): PropertyArea! @authenticated
   createBuilding(input: CreateBuildingInput!): PropertyBuilding! @authenticated
   createBuildingFloor(input: CreateBuildingFloorInput!): PropertyFloor! @authenticated
   createPropertyUnit(input: CreatePropertyUnitInput!): PropertyUnit! @authenticated
+  setPropertyAccessCredential(input: PropertyAccessCredentialInput!): PropertyAccessCredential! @authenticated
   createOwnerContract(input: CreateOwnerContractInput!): OwnerContract! @authenticated
   createPropertyAttributeDraft(input: PropertyAttributeDraftInput!): PropertyAttributeDefinition! @authenticated
   publishPropertyAttribute(definitionId: ID!, expectedRowVersion: String!, reason: String!): PropertyAttributeDefinition! @authenticated
@@ -27,14 +30,17 @@ type PropertyArea { id: ID!, cityId: ID!, code: String!, name: String!, building
 type PropertyBuilding { id: ID!, areaId: ID!, code: String!, name: String!, address: String!, floors: [PropertyFloor!]! }
 type PropertyFloor { id: ID!, buildingId: ID!, code: String!, name: String!, floorNumber: Int, units: [PropertyUnit!]! }
 type PropertyUnit { id: ID!, floorId: ID!, branchId: ID, code: String!, unitNumber: String, name: String!, operatingModel: String!, operationalStatus: String!, areaSqm: String, bedroomCount: Int!, bathroomCount: Int!, capacity: Int!, basePricePerNight: String, currency: String!, hostProfileId: ID, version: String! }
+type PropertyAccessCredential { propertyId: ID!, configured: Boolean!, keyVersion: Int!, version: String! }
 type OwnerContract { id: ID!, contractNumber: String!, startDate: String!, endDate: String!, status: String!, notes: String, version: String!, parties: [OwnerContractParty!]!, propertyTerms: [OwnerContractPropertyTerm!]! }
 type OwnerContractParty { hostProfileId: ID!, partyRole: String!, ownershipPercent: String, primary: Boolean! }
 type OwnerContractPropertyTerm { propertyId: ID!, operatingModel: String!, effectiveFrom: String!, effectiveTo: String!, fixedAmount: String, managementFeePercent: String, paymentPeriod: String!, paymentCycleCount: Int!, currency: String!, status: String! }
+input CreateOperatingBranchInput { code: String!, name: String! }
 input CreateCityInput { code: String!, name: String! }
 input CreateAreaInput { cityId: ID!, code: String!, name: String! }
 input CreateBuildingInput { areaId: ID!, code: String!, name: String!, address: String! }
 input CreateBuildingFloorInput { buildingId: ID!, code: String!, name: String!, floorNumber: Int, sortOrder: Int = 0 }
 input CreatePropertyUnitInput { floorId: ID!, branchId: ID!, code: String!, unitNumber: String, name: String!, operatingModel: String!, areaSqm: String, bedroomCount: Int = 0, bathroomCount: Int = 0, capacity: Int = 1, basePricePerNight: String, currency: String = "VND" }
+input PropertyAccessCredentialInput { propertyId: ID!, accessCode: String!, expectedVersion: String! }
 input CreateOwnerContractInput { contractNumber: String!, propertyId: ID!, hostProfileId: ID!, operatingModel: String!, startDate: String!, endDate: String!, fixedAmount: String, managementFeePercent: String, paymentPeriod: String = "MONTH", paymentCycleCount: Int = 1, currency: String = "VND", status: String = "ACTIVE", notes: String }
 type PropertyAttributeDefinition { id: ID!, code: String!, active: Boolean!, rowVersion: String!, versionId: ID!, version: Int!, status: String!, label: String!, description: String, groupCode: String!, dataType: String!, validationJson: String!, applicabilityJson: String!, visibility: String!, requiredOnPublish: Boolean!, filterable: Boolean!, displayOrder: Int!, unitLabel: String, createdByAccountId: ID!, approvedByAccountId: ID, reason: String! }
 type PropertyAttributeValue { code: String!, label: String!, dataType: String!, visibility: String!, valueJson: String!, valueVersion: String!, updatedAt: String! }

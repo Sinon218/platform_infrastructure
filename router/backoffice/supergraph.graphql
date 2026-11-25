@@ -480,6 +480,13 @@ input CreateInventoryBlockInput
   correlationId: String!
 }
 
+input CreateOperatingBranchInput
+  @join__type(graph: PROPERTY)
+{
+  code: String!
+  name: String!
+}
+
 input CreateOwnerContractInput
   @join__type(graph: PROPERTY)
 {
@@ -937,11 +944,13 @@ type Mutation
   resolveNotificationRecipientException(input: ResolveRecipientExceptionInput!): NotificationRecipientException! @join__field(graph: NOTIFICATION) @authenticated
   createVietQrPaymentIntent(input: CreateVietQrPaymentIntentInput!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
   cancelPaymentIntent(input: CancelPaymentIntentInput!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
+  createOperatingBranch(input: CreateOperatingBranchInput!): OperatingBranch! @join__field(graph: PROPERTY) @authenticated
   createCity(input: CreateCityInput!): PropertyCity! @join__field(graph: PROPERTY) @authenticated
   createArea(input: CreateAreaInput!): PropertyArea! @join__field(graph: PROPERTY) @authenticated
   createBuilding(input: CreateBuildingInput!): PropertyBuilding! @join__field(graph: PROPERTY) @authenticated
   createBuildingFloor(input: CreateBuildingFloorInput!): PropertyFloor! @join__field(graph: PROPERTY) @authenticated
   createPropertyUnit(input: CreatePropertyUnitInput!): PropertyUnit! @join__field(graph: PROPERTY) @authenticated
+  setPropertyAccessCredential(input: PropertyAccessCredentialInput!): PropertyAccessCredential! @join__field(graph: PROPERTY) @authenticated
   createOwnerContract(input: CreateOwnerContractInput!): OwnerContract! @join__field(graph: PROPERTY) @authenticated
   createPropertyAttributeDraft(input: PropertyAttributeDraftInput!): PropertyAttributeDefinition! @join__field(graph: PROPERTY) @authenticated
   publishPropertyAttribute(definitionId: ID!, expectedRowVersion: String!, reason: String!): PropertyAttributeDefinition! @join__field(graph: PROPERTY) @authenticated
@@ -1706,6 +1715,23 @@ type ProfileLinkReview
   displayName: String
 }
 
+type PropertyAccessCredential
+  @join__type(graph: PROPERTY)
+{
+  propertyId: ID!
+  configured: Boolean!
+  keyVersion: Int!
+  version: String!
+}
+
+input PropertyAccessCredentialInput
+  @join__type(graph: PROPERTY)
+{
+  propertyId: ID!
+  accessCode: String!
+  expectedVersion: String!
+}
+
 type PropertyArea
   @join__type(graph: PROPERTY)
 {
@@ -2130,6 +2156,7 @@ type Query
   notificationRecipientExceptions(input: RecipientExceptionQueryInput): RecipientExceptionConnection! @join__field(graph: NOTIFICATION) @authenticated
   paymentIntent(id: ID!): PaymentIntent! @join__field(graph: PAYMENT) @authenticated
   propertyPortfolio(search: String, operatingModel: String): PropertyPortfolio! @join__field(graph: PROPERTY) @authenticated
+  propertyAccessCredential(propertyId: ID!): PropertyAccessCredential! @join__field(graph: PROPERTY) @authenticated
   ownerContracts(propertyId: ID, status: String): [OwnerContract!]! @join__field(graph: PROPERTY) @authenticated
   propertyAttributeCatalog(includeDrafts: Boolean! = false): [PropertyAttributeDefinition!]! @join__field(graph: PROPERTY) @authenticated
   propertyAttributeValues(propertyId: ID!): [PropertyAttributeValue!]! @join__field(graph: PROPERTY) @authenticated

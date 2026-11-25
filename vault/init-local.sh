@@ -28,6 +28,7 @@ ensure_key vistay-profile-document aes256-gcm96
 ensure_key vistay-profile-lookup hmac
 ensure_key vistay-profile-link-otp hmac
 ensure_key vistay-profile-link-delivery aes256-gcm96
+ensure_key vistay-property-access aes256-gcm96
 
 vault policy write vistay-user-identity - <<'EOF'
 path "transit/encrypt/vistay-profile-document" {
@@ -53,6 +54,12 @@ path "transit/decrypt/vistay-profile-link-delivery" {
 }
 EOF
 
+vault policy write vistay-property-access - <<'EOF'
+path "transit/encrypt/vistay-property-access" {
+  capabilities = ["update"]
+}
+EOF
+
 ensure_token() {
   token="$1"
   policy="$2"
@@ -63,5 +70,6 @@ ensure_token() {
 
 ensure_token "${VAULT_USER_SERVICE_TOKEN:?VAULT_USER_SERVICE_TOKEN is required}" vistay-user-identity
 ensure_token "${VAULT_NOTIFICATION_SERVICE_TOKEN:?VAULT_NOTIFICATION_SERVICE_TOKEN is required}" vistay-notification-profile-link
+ensure_token "${VAULT_PROPERTY_SERVICE_TOKEN:?VAULT_PROPERTY_SERVICE_TOKEN is required}" vistay-property-access
 
 echo "Vault Transit keys and least-privilege local service policies are ready."

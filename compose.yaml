@@ -31,6 +31,7 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-local-vistay-vault-root}
       VAULT_USER_SERVICE_TOKEN: ${VAULT_USER_SERVICE_TOKEN:-local-vistay-user-service-token}
       VAULT_NOTIFICATION_SERVICE_TOKEN: ${VAULT_NOTIFICATION_SERVICE_TOKEN:-local-vistay-notification-service-token}
+      VAULT_PROPERTY_SERVICE_TOKEN: ${VAULT_PROPERTY_SERVICE_TOKEN:-local-vistay-property-service-token}
     volumes:
       - ./vault/init-local.sh:/opt/vistay/init-local.sh:ro
     entrypoint: ["/bin/sh", "/opt/vistay/init-local.sh"]
