@@ -54,7 +54,19 @@ powershell -ExecutionPolicy Bypass -File scripts\Seed-RealServerSkylake.ps1 `
   -AccessToken '<short-lived-access-token>'
 ```
 
+If one downstream protection dependency is temporarily unavailable, the runner
+can safely resume independent work without duplicating records:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\Seed-RealServerSkylake.ps1 `
+  -AccessToken '<short-lived-access-token>' `
+  -SkipAccessCredentials -SkipCustomerProfiles -SkipBookings
+```
+
+These switches are recovery controls, not a successful full seed. Run the
+command again without them after Vault is healthy; query-before-create and
+idempotency keys resume the missing credentials, profiles, and bookings.
+
 For a USB-connected test phone, the local helper under `.work` launches PKCE
 in Chrome and captures only the one-time callback code through ADB. Do not log
 or persist the resulting access token.
-

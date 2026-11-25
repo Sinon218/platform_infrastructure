@@ -4,7 +4,9 @@ param(
   [string]$GraphqlUrl = 'https://api-vistay.fakebook.tech/graphqloffice',
   [string]$AccessCodeFile = 'D:\Vistay\.secrets\skylake-access-codes.json',
   [datetime]$BookingStartDate = [datetime]'2026-11-26',
-  [switch]$SkipAccessCredentials
+  [switch]$SkipAccessCredentials,
+  [switch]$SkipCustomerProfiles,
+  [switch]$SkipBookings
 )
 
 $ErrorActionPreference = 'Stop'
@@ -362,22 +364,24 @@ foreach ($tower in @('S1', 'S2', 'S3')) {
 }
 
 $customers = @()
-for ($index = 1; $index -le 10; $index++) {
-  $email = ('skylake.customer{0:D2}@vistay.local' -f $index)
-  $existing = @(Get-Directory -Type CUSTOMER -Search $email).nodes | Where-Object email -eq $email | Select-Object -First 1
-  if ($existing) { $customers += $existing; continue }
-  $document = '{0:D12}' -f ([long]100100000000 + $index)
-  $customers += New-Profile -Type CUSTOMER -ProfileInput @{
-    fullName = ('Khach Skylake {0:D2}' -f $index)
-    email = $email
-    contactPhone = ('+84910010{0:D2}' -f $index)
-    dateOfBirth = ([datetime]'1990-01-01').AddDays($index * 31).ToString('yyyy-MM-dd')
-    nationalityCode = 'VN'
-    documentType = 'CCCD'
-    documentNumber = $document
-    address = 'Ha Noi, Viet Nam'
-    reason = 'Seed customer profile for real-server booking tests'
-    idempotencyKey = ('skylake-customer-{0:D2}-{1}' -f $index, $seedVersion)
+if (-not $SkipCustomerProfiles) {
+  for ($index = 1; $index -le 10; $index++) {
+    $email = ('skylake.customer{0:D2}@vistay.local' -f $index)
+    $existing = @(Get-Directory -Type CUSTOMER -Search $email).nodes | Where-Object email -eq $email | Select-Object -First 1
+    if ($existing) { $customers += $existing; continue }
+    $document = '{0:D12}' -f ([long]100100000000 + $index)
+    $customers += New-Profile -Type CUSTOMER -ProfileInput @{
+      fullName = ('Khach Skylake {0:D2}' -f $index)
+      email = $email
+      contactPhone = ('+84910010{0:D2}' -f $index)
+      dateOfBirth = ([datetime]'1990-01-01').AddDays($index * 31).ToString('yyyy-MM-dd')
+      nationalityCode = 'VN'
+      documentType = 'CCCD'
+      documentNumber = $document
+      address = 'Ha Noi, Viet Nam'
+      reason = 'Seed customer profile for real-server booking tests'
+      idempotencyKey = ('skylake-customer-{0:D2}-{1}' -f $index, $seedVersion)
+    }
   }
 }
 
@@ -391,14 +395,14 @@ query SeedContracts { ownerContracts { id contractNumber status version property
 
 foreach ($unit in $allUnits) {
   $tower = $unit.code.Split('-', 2)[0]
-  $host = @($hosts | Where-Object { $_.referenceCode -eq "SKY-OWNER-$tower" -or $_.email -eq "skylake.owner.$($tower.ToLowerInvariant())@vistay.local" } | Select-Object -First 1)
-  if (-not $host) { throw "Host profile for $tower was not resolved." }
+  $hostProfile = @($hosts | Where-Object { $_.referenceCode -eq "SKY-OWNER-$tower" -or $_.email -eq "skylake.owner.$($tower.ToLowerInvariant())@vistay.local" } | Select-Object -First 1)
+  if (-not $hostProfile) { throw "Host profile for $tower was not resolved." }
   $contractNumber = "SKY-$($unit.code)-2026"
   if (@($contracts | Where-Object contractNumber -eq $contractNumber | Select-Object -First 1)) { continue }
-  $input = @{
+  $contractInput = @{
     contractNumber = $contractNumber
     propertyId = $unit.id
-    hostProfileId = $host.profileId
+    hostProfileId = $hostProfile.profileId
     operatingModel = $unit.operatingModel
     startDate = '2026-11-25'
     endDate = '2027-11-25'
@@ -408,9 +412,9 @@ foreach ($unit in $allUnits) {
     status = 'ACTIVE'
     notes = 'Skylake contract seeded through the real GraphQL API'
   }
-  if ($unit.operatingModel -eq 'MANAGEMENT') { $input.managementFeePercent = '15' }
-  if ($unit.operatingModel -eq 'LEASED_BY_VISTAY') { $input.fixedAmount = '18000000' }
-  $null = Invoke-ViStayGraphql -OperationName 'SeedContract' -Variables @{ input = $input } -Query @'
+  if ($unit.operatingModel -eq 'MANAGEMENT') { $contractInput.managementFeePercent = '15' }
+  if ($unit.operatingModel -eq 'LEASED_BY_VISTAY') { $contractInput.fixedAmount = '18000000' }
+  $null = Invoke-ViStayGraphql -OperationName 'SeedContract' -Variables @{ input = $contractInput } -Query @'
 mutation SeedContract($input: CreateOwnerContractInput!) {
   createOwnerContract(input: $input) { id contractNumber status version propertyTerms { propertyId operatingModel status } parties { hostProfileId primary } }
 }
@@ -418,11 +422,13 @@ mutation SeedContract($input: CreateOwnerContractInput!) {
 }
 
 $createdBookings = @()
-for ($index = 0; $index -lt 20; $index++) {
+if (-not $SkipBookings) {
+  if ($customers.Count -eq 0) { throw 'Bookings require at least one resolved customer profile.' }
+  for ($index = 0; $index -lt 20; $index++) {
   $unit = $allUnits[$index]
   $customer = $customers[$index % $customers.Count]
   $tower = $unit.code.Split('-', 2)[0]
-  $host = @($hosts | Where-Object { $_.referenceCode -eq "SKY-OWNER-$tower" -or $_.email -eq "skylake.owner.$($tower.ToLowerInvariant())@vistay.local" } | Select-Object -First 1)
+  $hostProfile = @($hosts | Where-Object { $_.referenceCode -eq "SKY-OWNER-$tower" -or $_.email -eq "skylake.owner.$($tower.ToLowerInvariant())@vistay.local" } | Select-Object -First 1)
   $checkIn = $BookingStartDate.AddDays($index * 2)
   $checkOut = $checkIn.AddDays(2 + ($index % 3))
   $availability = (Invoke-ViStayGraphql -OperationName 'SeedAvailability' -Variables @{
@@ -433,11 +439,11 @@ query SeedAvailability($input: PropertyAvailabilityInput!) { propertyAvailabilit
   if (-not $availability.available) {
     throw "Unit $($unit.code) is not available from $($checkIn.ToString('yyyy-MM-dd')) to $($checkOut.ToString('yyyy-MM-dd'))."
   }
-  $createdBookings += (Invoke-ViStayGraphql -OperationName 'SeedBooking' -Variables @{ input = @{
+    $createdBookings += (Invoke-ViStayGraphql -OperationName 'SeedBooking' -Variables @{ input = @{
     idempotencyKey = ('skylake-booking-{0:D2}-{1}' -f ($index + 1), $seedVersion)
     propertyId = $unit.id
     propertyName = $unit.name
-    hostProfileId = $host.profileId
+    hostProfileId = $hostProfile.profileId
     customerProfileId = $customer.profileId
     guestName = $customer.displayName
     guestPhone = $customer.contactPhone
@@ -456,6 +462,7 @@ query SeedAvailability($input: PropertyAvailabilityInput!) { propertyAvailabilit
   } } -Query @'
 mutation SeedBooking($input: CreateBookingInput!) { createBooking(input: $input) { id bookingCode propertyId customerId guestName status checkInDate checkOutDate totalAmount currency version } }
 '@).createBooking
+  }
 }
 
 $portfolio = Get-Portfolio
@@ -473,7 +480,9 @@ $timeline = (Invoke-ViStayGraphql -OperationName 'VerifyTimeline' -Variables @{ 
 query VerifyTimeline($input: BookingTimelineInput!) { bookingTimeline(input: $input) { fromDate toDateExclusive truncated nodes { id bookingCode propertyId customerId status checkInDate checkOutDate totalAmount currency } } }
 '@).bookingTimeline
 
-$replay = (Invoke-ViStayGraphql -OperationName 'VerifyBookingReplay' -Variables @{ input = @{
+$replay = $null
+if (-not $SkipBookings) {
+  $replay = (Invoke-ViStayGraphql -OperationName 'VerifyBookingReplay' -Variables @{ input = @{
   idempotencyKey = "skylake-booking-01-$seedVersion"
   propertyId = $allUnits[0].id
   propertyName = $allUnits[0].name
@@ -493,12 +502,15 @@ $replay = (Invoke-ViStayGraphql -OperationName 'VerifyBookingReplay' -Variables 
 } } -Query @'
 mutation VerifyBookingReplay($input: CreateBookingInput!) { createBooking(input: $input) { id bookingCode } }
 '@).createBooking
+}
 
-$firstBooking = $createdBookings | Select-Object -First 1
-if ($replay.id -ne $firstBooking.id) { throw 'Booking idempotency replay returned a different resource.' }
+if (-not $SkipBookings) {
+  $firstBooking = $createdBookings | Select-Object -First 1
+  if ($replay.id -ne $firstBooking.id) { throw 'Booking idempotency replay returned a different resource.' }
+}
 if ($verifiedUnits.Count -ne $unitCodes.Count) { throw "Expected $($unitCodes.Count) Skylake units, found $($verifiedUnits.Count)." }
 if ($verifiedContracts.Count -lt $unitCodes.Count) { throw "Expected at least $($unitCodes.Count) Skylake contracts, found $($verifiedContracts.Count)." }
-if (@($createdBookings).Count -ne 20) { throw "Expected 20 booking results, found $(@($createdBookings).Count)." }
+if (-not $SkipBookings -and @($createdBookings).Count -ne 20) { throw "Expected 20 booking results, found $(@($createdBookings).Count)." }
 
 [pscustomobject]@{
   server = $GraphqlUrl
@@ -515,7 +527,7 @@ if (@($createdBookings).Count -ne 20) { throw "Expected 20 booking results, foun
   bookingMutationResults = @($createdBookings).Count
   timelineBookings = @($timeline.nodes).Count
   timelineTruncated = $timeline.truncated
-  idempotencyReplayPassed = $true
+  idempotencyReplayPassed = -not $SkipBookings
   accessPasswordsSeeded = -not $SkipAccessCredentials
   accessPasswordStorage = if ($SkipAccessCredentials) {
     'Deferred because server Vault Transit is unavailable.'
